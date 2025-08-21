@@ -1,10 +1,11 @@
 const fs = require("fs");
 const path = __dirname + "/cache/vip.json";
 
-const OWNER_ID = "61557991443492"; // 👑 Owner/Super Admin
+// Only Hasib is the real owner
+const OWNER_ID = "61557991443492"; 
 
 // Initialize file if not exists
-if (!fs.existsSync(path)) fs.writeFileSync(path, JSON.stringify({ vips: {}, tasks: {} }, null, 2));
+if (!fs.existsSync(path)) fs.writeFileSync(path, JSON.stringify({ vips: {} }, null, 2));
 
 function loadData() {
   return JSON.parse(fs.readFileSync(path));
@@ -22,31 +23,48 @@ function getRemainingDays(expireTime) {
   return Math.ceil(diff / (1000 * 60 * 60 * 24)) + " days";
 }
 
+// Auto-clean expired VIPs
+function cleanupExpired(vipData) {
+  const now = Date.now();
+  for (let uid in vipData) {
+    if (vipData[uid] && vipData[uid] < now) {
+      delete vipData[uid];
+    }
+  }
+  return vipData;
+}
+
 module.exports = {
   config: {
     name: "vip",
     aliases: ["v", "premium"],
-    version: "5.0",
+    version: "6.0",
     author: "Hasib",
     role: 0,
-    shortDescription: "Manage VIP users with owner control & tasks",
+    shortDescription: "VIP system managed by Hasib",
     category: "user",
-    guide: "{pn} + <mention/uid/link> [days] | remove <mention/uid/link> | list | task | task claim"
+    guide: "{pn} + <mention/uid/link> [days] | remove <mention/uid/link> | list"
   },
 
   onStart: async function ({ message, args, event, usersData }) {
     let data = loadData();
     let vipData = data.vips || {};
-    let tasks = data.tasks || {};
     const senderID = event.senderID;
+
+    // --- Only Hasib can manage VIPs ---
     const isOwner = senderID === OWNER_ID;
+
+    // --- Cleanup expired VIPs ---
+    vipData = cleanupExpired(vipData);
+    data.vips = vipData;
+    saveData(data);
 
     // Helper: get UID from reply, mention, or direct args
     const getUID = () => event.messageReply?.senderID || Object.keys(event.mentions || {})[0] || args[3];
 
     // --- ADD VIP ---
     if ((args[0] === "+" && args[1] === "vip") || (args[0] === "vip" && args[1] === "add")) {
-      if (!isOwner) return message.reply("⚠️ Only the Owner can add VIPs.");
+      if (!isOwner) return message.reply("⚠️ Only Hasib can add VIPs.");
 
       const uid = getUID();
       if (!uid) return message.reply("⚠️ Provide a UID, reply, or mention.");
@@ -67,7 +85,7 @@ module.exports = {
 
     // --- REMOVE VIP ---
     if (args[0] === "remove") {
-      if (!isOwner) return message.reply("⚠️ Only the Owner can remove VIPs.");
+      if (!isOwner) return message.reply("⚠️ Only Hasib can remove VIPs.");
 
       const uid = getUID();
       if (!uid) return message.reply("⚠️ Provide a UID, reply, or mention.");
@@ -89,58 +107,19 @@ module.exports = {
       return message.reply("📜 VIP List:\n" + list.join("\n"));
     }
 
-    // --- VIP TASKS ---
-    if (args[0] === "task") {
-      // Show task instructions
-      if (!args[1]) {
-        return message.reply(
-`📌 VIP Task:
-1. Send 200 messages in the group
-2. React to the Owner's post
-Use \`vip task claim\` when done to get VIP +2 days`
-        );
-      }
-
-      // Claim task reward
-      if (args[1] === "claim") {
-        if (!vipData[senderID]) return message.reply("❌ You are not a VIP.");
-        const expire = vipData[senderID];
-        if (expire && expire < Date.now()) return message.reply("❌ Your VIP has expired.");
-
-        const lastClaim = tasks[senderID] || 0;
-        const now = Date.now();
-        if (now - lastClaim < 86400000) return message.reply("⚠️ You already claimed your task reward today.");
-
-        // Extend VIP by 2 days
-        const currentExpire = vipData[senderID] || now;
-        const newExpire = currentExpire > now ? currentExpire + 2 * 86400000 : now + 2 * 86400000;
-        vipData[senderID] = newExpire;
-
-        // Save task claim timestamp
-        tasks[senderID] = now;
-
-        // Save data
-        data.vips = vipData;
-        data.tasks = tasks;
-        saveData(data);
-
-        return message.reply(`🎉 Task completed! Your VIP has been extended by 2 days. New expiry: ${new Date(newExpire).toLocaleString()}`);
-      }
-    }
-
     // --- HELP MENU ---
     return message.reply(
 `╭──✦ [ Command: VIP ]
 ├‣ 📜 Name: vip
 ├‣ 🪶 Aliases: v, premium
-├‣ 👤 Credits: Dipto
+├‣ 👤 Credits: Hasib
 ╰‣ 🔑 Permission: Everyone
 
 ╭─✦ [ INFORMATION ]
 ├‣ Cost: Free
 ├‣ Description:
 │   Manage VIP users: add, remove, and list.
-╰─✦ Guide: !vip + <mention/uid/link> [days] | !vip remove <mention/uid/link> | !vip list | !vip task | !vip task claim
+╰─✦ Guide: !vip + <mention/uid/link> [days] | !vip remove <mention/uid/link> | !vip list
 
 ╭─✦ [ SETTINGS ]
 ├‣ 🚩 Prefix Required: ✓ Required
