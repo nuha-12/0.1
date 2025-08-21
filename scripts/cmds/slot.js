@@ -1,5 +1,5 @@
 const OWNER_IDS = ["61557991443492"]; // Owner ID
-const MAX_OWNER_JACKPOT = 10;
+const MAX_OWNER_JACKPOT = 5;
 const USER_SPIN_LIMIT = 20; // Max 20 spins per 12 hours
 const RULE_BREAK_FINE = 120_000_000; // Fine for breaking rules
 
@@ -208,7 +208,7 @@ function slotRules() {
 
 1⃣ 𝐁𝐞𝐭 𝐋𝐢𝐦𝐢𝐭: Maximum bet is $6,000,000 (6M).
 
-2⃣ 𝐋𝐢𝐦𝐢𝐭𝐬: Maximum 20 spins per 12 hours. Owners have unlimited spins.
+2⃣ 𝐋𝐢𝐦𝐢𝐭𝐬: Maximum 20 spins per 12 hours. 
 
 3⃣ 𝐅𝐢𝐧𝐞: Breaking any rules (exceeding spin limit or invalid bets) automatically applies a fine of $120,000,000.
 
@@ -220,7 +220,7 @@ function slotInfo() {
   return `╭──✦ [ Command: SLOT ]
 ├‣ 📜 Name: slot
 ├‣ 🪶 Aliases: None
-├‣ 👤 Credits: Dipto
+├‣ 👤 Credits: 𝙷𝚊𝚜𝚒𝚋
 ╰‣ 🔑 Permission: Everyone
 
 ╭─✦ [ INFORMATION ]
@@ -234,7 +234,7 @@ function slotInfo() {
 │   setbalance [amount] - Owner only (reply/tag user)
 
 ╭─✦ [ SETTINGS ]
-├‣ 🚩 Spin Limit: 20 per 12 hours (users), unlimited (owner)
+├‣ 🚩 Spin Limit: 20 per 12 hours (users), 
 ├‣ ⚜ Premium: Free
 ├‣ 💸 Fine: $120,000,000 for rule-breaking`;
 }
@@ -267,4 +267,4 @@ function slotGlobalList() {
   });
   message += "╰─✦";
   return message;
-}
+    }
