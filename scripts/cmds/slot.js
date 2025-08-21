@@ -14,7 +14,7 @@ module.exports = {
     name: "slot",
     aliases: [],
     version: "10.0",
-    author: "Dipto",
+    author: "Hasib",
     description: { role: 2, en: "Playing slot game" },
     category: "Game",
   },
