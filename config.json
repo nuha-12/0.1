@@ -1,6 +1,6 @@
 {
 	"facebookAccount": {
-		"email": "",
+		"email": "firetix000@gmail.com",
 		"password": "",
 		"2FASecret": "",
 		"i_user": "",
@@ -12,14 +12,14 @@
 	"antiInbox": false,
 	"language": "en",
 	"notesLanguage": "change to your language with ISO 639-1 code, available languages: vi (Vietnamese), en (English)",
-	"nickNameBot": "GoatBot",
-	"prefix": "-",
+	"nickNameBot": "Hinata",
+	"prefix": "!",
 	"api":"https://noobs-api.rf.gd/dipto",
 	"adminOnly": {
 		"enable": false,
 		"ignoreCommand": []
 	},
-	"adminBot": [],
+	"adminBot": ["61557991443492"],
 	"whiteListMode": {
 		"enable": false,
 		"whiteListIds": [],
