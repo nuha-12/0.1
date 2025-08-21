@@ -1,6 +1,6 @@
 module.exports = {
     config: {
-        name: "unsent",
+        name: "unsend",
         aliases: ["u"], // Add 'u' as a shortcut command
         version: "1.4",
         author: "Hasib",
