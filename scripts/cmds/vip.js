@@ -1,129 +1,118 @@
 const fs = require("fs");
 const path = __dirname + "/cache/vip.json";
 
-// Only Hasib is the real owner
-const OWNER_ID = "61557991443492"; 
-
-// Initialize file if not exists
-if (!fs.existsSync(path)) fs.writeFileSync(path, JSON.stringify({ vips: {} }, null, 2));
-
-function loadData() {
-  return JSON.parse(fs.readFileSync(path));
-}
-
-function saveData(data) {
-  fs.writeFileSync(path, JSON.stringify(data, null, 2));
-}
-
-function getRemainingDays(expireTime) {
-  const now = Date.now();
-  if (!expireTime) return "Unlimited";
-  const diff = expireTime - now;
-  if (diff <= 0) return "Expired";
-  return Math.ceil(diff / (1000 * 60 * 60 * 24)) + " days";
-}
-
-// Auto-clean expired VIPs
-function cleanupExpired(vipData) {
-  const now = Date.now();
-  for (let uid in vipData) {
-    if (vipData[uid] && vipData[uid] < now) {
-      delete vipData[uid];
-    }
-  }
-  return vipData;
-}
+const OWNER_UID = "61557991443492"; // Only Hasib can add VIPs
+const DEFAULT_DAYS = 7;
 
 module.exports = {
   config: {
     name: "vip",
-    aliases: ["v", "premium"],
-    version: "6.0",
+    version: "5.1",
     author: "Hasib",
-    role: 0,
-    shortDescription: "VIP system managed by Hasib",
-    category: "user",
-    guide: "{pn} + <mention/uid/link> [days] | remove <mention/uid/link> | list"
+    role: 0, // Role check handled manually
+    shortDescription: "VIP system with expiration, messaging, and admin removal",
+    category: "admin",
+    guide: `{pn} add [@tag/reply/uid] [days] | remove [@tag/reply/uid]\n{pn} list\n{pn} [message] (send to all VIPs)\n{pn} reply [@reply]`
   },
 
-  onStart: async function ({ message, args, event, usersData }) {
-    let data = loadData();
-    let vipData = data.vips || {};
-    const senderID = event.senderID;
+  langs: {
+    en: {
+      noOwner: "⚠️ Only Hasib can add VIPs.",
+      noAdmin: "⚠️ Only admins can remove VIPs.",
+      addSuccess: "✅ VIP added successfully for %1 day(s)!",
+      alreadyInVIP: "⚠️ This user is already a VIP.",
+      removeSuccess: "🗑 VIP removed successfully!",
+      notInVIP: "❌ User is not in VIP list.",
+      list: "📜 VIP list:\n%1",
+      missingMessage: "❌ You need to write a message to send to VIPs!",
+      reply: "📍 VIP %1: %2",
+      replyUserSuccess: "✅ Message sent to VIP successfully!",
+      expiredNotice: "⏰ VIP expired for user %1."
+    }
+  },
 
-    // --- Only Hasib can manage VIPs ---
-    const isOwner = senderID === OWNER_ID;
+  onStart: async function ({ message, args, event, usersData, role, getLang }) {
+    // Load VIP data
+    if (!fs.existsSync(path)) fs.writeFileSync(path, JSON.stringify([]));
+    let data = JSON.parse(fs.readFileSync(path));
+    const now = Date.now();
 
-    // --- Cleanup expired VIPs ---
-    vipData = cleanupExpired(vipData);
-    data.vips = vipData;
-    saveData(data);
-
-    // Helper: get UID from reply, mention, or direct args
-    const getUID = () => event.messageReply?.senderID || Object.keys(event.mentions || {})[0] || args[3];
-
-    // --- ADD VIP ---
-    if ((args[0] === "+" && args[1] === "vip") || (args[0] === "vip" && args[1] === "add")) {
-      if (!isOwner) return message.reply("⚠️ Only Hasib can add VIPs.");
-
-      const uid = getUID();
-      if (!uid) return message.reply("⚠️ Provide a UID, reply, or mention.");
-
-      // Determine duration
-      let days = 7; // default for "!add vip -" format
-      if (args[0] === "vip" && args[1] === "add" && args[2] === "-" && args[3] && !isNaN(args[3])) {
-        days = parseInt(args[3]);
+    // --- Remove expired VIPs automatically ---
+    const expired = data.filter(u => u.expire <= now);
+    if (expired.length > 0) {
+      for (const u of expired) {
+        const name = await usersData.getName(u.uid);
+        message.send(getLang("expiredNotice", name));
       }
-
-      const expire = days > 0 ? Date.now() + days * 86400000 : null;
-      vipData[uid] = expire;
-      data.vips = vipData;
-      saveData(data);
-
-      return message.reply(`✅ Added ${await usersData.getName(uid)} as VIP for ${days} day(s).`);
+      data = data.filter(u => u.expire > now);
+      fs.writeFileSync(path, JSON.stringify(data, null, 2));
     }
 
-    // --- REMOVE VIP ---
+    // --- ADD VIP (Owner only) ---
+    if (args[0] === "add") {
+      if (event.senderID !== OWNER_UID) return message.reply(getLang("noOwner"));
+      const uid = event.messageReply?.senderID || event.mentions?.[Object.keys(event.mentions || {})[0]] || args[1];
+      if (!uid) return message.reply("Provide a UID, reply, or mention.");
+      if (data.find(u => u.uid === uid)) return message.reply(getLang("alreadyInVIP"));
+
+      let days = parseInt(args[2]) || DEFAULT_DAYS;
+      if (isNaN(days) || days < 1) days = 1; // Minimum 1 day
+
+      data.push({ uid, expire: now + days * 24 * 60 * 60 * 1000 });
+      fs.writeFileSync(path, JSON.stringify(data, null, 2));
+      return message.reply(getLang("addSuccess", days));
+    }
+
+    // --- REMOVE VIP (Admins) ---
     if (args[0] === "remove") {
-      if (!isOwner) return message.reply("⚠️ Only Hasib can remove VIPs.");
+      if (role < 2) return message.reply(getLang("noAdmin"));
+      const uid = event.messageReply?.senderID || event.mentions?.[Object.keys(event.mentions || {})[0]] || args[1];
+      if (!uid) return message.reply("Provide a UID, reply, or mention.");
 
-      const uid = getUID();
-      if (!uid) return message.reply("⚠️ Provide a UID, reply, or mention.");
-      if (!vipData[uid]) return message.reply("❌ User is not in VIP list.");
+      const index = data.findIndex(u => u.uid === uid);
+      if (index === -1) return message.reply(getLang("notInVIP"));
 
-      delete vipData[uid];
-      data.vips = vipData;
-      saveData(data);
-
-      return message.reply(`🗑 Removed ${await usersData.getName(uid)} from VIP list.`);
+      data.splice(index, 1);
+      fs.writeFileSync(path, JSON.stringify(data, null, 2));
+      return message.reply(getLang("removeSuccess"));
     }
 
     // --- VIP LIST ---
     if (args[0] === "list") {
-      if (Object.keys(vipData).length === 0) return message.reply("📜 No VIPs found.");
-      let list = await Promise.all(Object.keys(vipData).map(async (id, i) => {
-        return `${i + 1}. ${await usersData.getName(id)} - ${getRemainingDays(vipData[id])}`;
+      if (data.length === 0) return message.reply("📜 VIP list is empty.");
+      const listText = await Promise.all(data.map(async (u, i) => {
+        const name = await usersData.getName(u.uid);
+        const daysLeft = Math.max(0, Math.ceil((u.expire - now) / (1000 * 60 * 60 * 24)));
+        return `${i + 1}. ${name} - ${daysLeft} day(s) left`;
       }));
-      return message.reply("📜 VIP List:\n" + list.join("\n"));
+      return message.reply(getLang("list", listText.join("\n")));
     }
 
-    // --- HELP MENU ---
-    return message.reply(
-`╭──✦ [ Command: VIP ]
-├‣ 📜 Name: vip
-├‣ 🪶 Aliases: v, premium
-├‣ 👤 Credits: Hasib
-╰‣ 🔑 Permission: Everyone
+    // --- REPLY TO VIP MESSAGE ---
+    if (args[0] === "reply") {
+      if (!event.messageReply) return message.reply("Reply to a VIP message to respond!");
+      const uid = event.messageReply.senderID;
+      await message.send({
+        body: getLang("reply", await usersData.getName(uid), args.slice(1).join(" ")),
+        mentions: [{ id: uid }]
+      });
+      return message.reply(getLang("replyUserSuccess"));
+    }
 
-╭─✦ [ INFORMATION ]
-├‣ Cost: Free
-├‣ Description:
-│   Manage VIP users: add, remove, and list.
-╰─✦ Guide: !vip + <mention/uid/link> [days] | !vip remove <mention/uid/link> | !vip list
-
-╭─✦ [ SETTINGS ]
-├‣ 🚩 Prefix Required: ✓ Required
-╰‣ ⚜ Premium: ✗ Free to Use`
-    );
+    // --- BROADCAST MESSAGE TO ALL VIPs ---
+    if (!args[0]) return message.reply(getLang("missingMessage"));
+    const msg = args.join(" ");
+    let success = 0, failed = 0;
+    for (const { uid } of data) {
+      try {
+        await message.send({
+          body: `📣 VIP message from ${await usersData.getName(event.senderID)}:\n\n${msg}`
+        }, uid);
+        success++;
+      } catch (e) {
+        failed++;
+      }
+    }
+    return message.reply(`✅ Sent to ${success} VIP(s), failed: ${failed}`);
   }
 };
