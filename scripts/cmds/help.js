@@ -1,116 +1,77 @@
 const { GoatWrapper } = require("fca-liane-utils");
-
 module.exports = {
   config: {
     name: "help",
     aliases: ["menu"],
-    version: "3.0",
+    version: "1.0",
     author: "Hasib",
     usePrefix: false,
-    countDown: 3,
+    countDown: 5,
     role: 0,
     shortDescription: {
-      en: "Advanced help system for all bot commands"
+      en: "Displays a list of commands or details for a specific command"
     },
     longDescription: {
-      en: "Displays a full categorized menu of commands with pages, search, and details. Also shows VIP-only commands if user is VIP."
+      en: "Provides a list of all available commands or detailed information about a specific command"
     },
     category: "info",
     guide: {
-      en: "help [command/category/page]"
+      en: "help [command_name]"
     }
   },
 
   onStart: async function ({ api, event, args }) {
-    const { threadID, messageID, senderID } = event;
+    const { threadID, messageID } = event;
     const { commands, aliases } = global.GoatBot;
     const totalCommands = commands.size;
 
-    // Check VIP (you can replace with your own VIP system)
-    const VIP_USERS = ["61557991443492", "100080875636629"];
-    const isVIP = VIP_USERS.includes(senderID);
-
-    // Group commands
-    const categories = {};
-    for (const [name, cmd] of commands) {
-      const category = cmd.config.category || "other";
-      if (!categories[category]) categories[category] = [];
-      // VIP check: hide vip-only commands if not VIP
-      if (cmd.config.role === 2 && !isVIP) continue;
-      categories[category].push(name);
-    }
-
-    // --- If no args: show menu with categories ---
     if (args.length === 0) {
-      let response = `✨ 𝐀𝐝𝐯𝐚𝐧𝐜𝐞𝐝 𝐁𝐨𝐭 𝐌𝐞𝐧𝐮 ✨\n\n`;
+      const categories = {};
+      let responseMessage = "𖣘︎➻❥𝐂𝐨𝐦𝐦𝐚𝐧𝐝 𝐋𝐢𝐬𝐭࿐𖣘︎\n\n";
 
-      // Emojis for categories
-      const emojiCategory = {
-        info: "📘",
-        fun: "🎮",
-        admin: "🛠️",
-        utility: "⚡",
-        music: "🎵",
-        image: "🖼️",
-        other: "📂"
-      };
-
-      // Sort categories alphabetically
-      const sortedCategories = Object.keys(categories).sort();
-
-      for (const category of sortedCategories) {
-        const cmds = categories[category].sort();
-        response += `\n╭──『 ${emojiCategory[category] || "📂"} ${category.toUpperCase()} 』\n`;
-        response += cmds.map((c) => `│ • ${c}`).join("\n") + "\n";
-        response += `╰─────────────⭓\n`;
+      for (const [name, cmd] of commands) {
+        if (!categories[cmd.config.category]) {
+          categories[cmd.config.category] = [];
+        }
+        categories[cmd.config.category].push(name);
       }
 
-      response += `\n╭───────────────➣\n` +
-                  `│ 🔹 Total Commands: ${totalCommands}\n` +
-                  `│ 💡 Usage: help (command)\n` +
-                  `│ 🔎 Search: help (category)\n` +
-                  `│ 👑 Creator: ${this.config.author}\n` +
-                  (isVIP ? "│ 🌟 Status: VIP User\n" : "│ ⚡ Status: Normal User\n") +
-                  `╰───────────────➣`;
+      for (const [category, cmds] of Object.entries(categories)) {
+        responseMessage += `\n╭────────⭓\n`;
+        responseMessage += `\│『 ${category.toUpperCase()} 』\n`;
+        responseMessage += cmds.map((cmd) => ✧ `│  ${cmd}`).join("\n") + "\n";
+        responseMessage += `╰────────⭓`;
+      }
 
-      return api.sendMessage(response, threadID, messageID);
+      responseMessage += `\n╭───────────────➣\n│ 𝐂𝐮𝐫𝐫𝐞𝐧𝐭𝐥𝐲, 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐡𝐚𝐬 [${totalCommands}]\n│ 𝐜𝐨𝐦𝐦𝐚𝐧𝐝𝐬.\n│ 𝐔𝐬𝐞 'help (cmd)' 𝐭𝐨 𝐠𝐞𝐭 𝐦𝐨𝐫𝐞\n│ 𝐝𝐞𝐭𝐚𝐢𝐥𝐬.\n│ 𝐂𝐫𝐞𝐚𝐭𝐨𝐫:Karim benzima  \n╰───────────────➣`;
+
+      return api.sendMessage(responseMessage, threadID, messageID);
     }
 
-    // --- If searching by category ---
-    const arg = args[0].toLowerCase();
-    if (categories[arg]) {
-      const cmds = categories[arg].sort();
-      let response = `📂 𝐂𝐚𝐭𝐞𝐠𝐨𝐫𝐲: ${arg.toUpperCase()}\n\n`;
-      response += cmds.map((c) => `• ${c}`).join("\n");
-      return api.sendMessage(response, threadID, messageID);
+    // Specific command info
+    const commandName = args[0].toLowerCase();
+    const command = commands.get(commandName) || commands.get(aliases.get(commandName));
+
+    if (!command) {
+      return api.sendMessage(`❌ Command "${commandName}" not found.`, threadID, messageID);
     }
 
-    // --- If searching for a specific command ---
-    const command = commands.get(arg) || commands.get(aliases.get(arg));
-    if (command) {
-      const config = command.config;
-      const guide = config.guide?.en || "No usage guide available.";
-      const description = config.longDescription?.en || "No description available.";
+    const config = command.config;
+    const guide = config.guide?.en || "No usage guide available.";
+    const description = config.longDescription?.en || "No description available.";
+    const response =
+      `✿──────────────────✿ \n\n` +
+      `🔍 𝐂𝐨𝐦𝐦𝐚𝐧𝐝 𝐃𝐞𝐭𝐚𝐢𝐥𝐬 🔎\n\n` +
+      `🌟 | 𝐍𝐚𝐦𝐞: ${config.name}\n` +
+      `🔀 | 𝐀𝐥𝐢𝐚𝐬𝐞𝐬: ${config.aliases?.join(", ") || "None"}\n` +
+      `📜 | 𝐃𝐞𝐬𝐜𝐫𝐢𝐩𝐭𝐢𝐨𝐧: ${description}\n` +
+      `🛠️ 𝐔𝐬𝐚𝐠𝐞: ${guide}\n` +
+      `🗂️ | 𝐕𝐞𝐫𝐬𝐢𝐨𝐧: ${config.version || "1.0"}\n` +
+      `✍️ | 𝐀𝐮𝐭𝐡𝐨𝐫: ${config.author || "Unknown"}\n` +
+      `⏳ | 𝐂𝐨𝐨𝐥𝐝𝐨𝐰𝐧: ${config.countDown || 0}s\n` +
+      `🔑 | 𝐑𝐨𝐥𝐞: ${config.role || 0}\n\n✿──────────────────✿`;
 
-      const response =
-        `✿──────────────────✿ \n\n` +
-        `🔍 𝐂𝐨𝐦𝐦𝐚𝐧𝐝 𝐃𝐞𝐭𝐚𝐢𝐥𝐬 🔎\n\n` +
-        `🌟 | Name: ${config.name}\n` +
-        `🔀 | Aliases: ${config.aliases?.join(", ") || "None"}\n` +
-        `📜 | Description: ${description}\n` +
-        `🛠️ | Usage: ${guide}\n` +
-        `🗂️ | Category: ${config.category || "other"}\n` +
-        `📌 | Version: ${config.version || "1.0"}\n` +
-        `✍️ | Author: ${config.author || "Unknown"}\n` +
-        `⏳ | Cooldown: ${config.countDown || 0}s\n` +
-        `🔑 | Role: ${config.role || 0}\n\n` +
-        `✿──────────────────✿`;
-
-      return api.sendMessage(response, threadID, messageID);
-    }
-
-    // --- If nothing found ---
-    return api.sendMessage(`❌ No command or category found for "${arg}".`, threadID, messageID);
+    return api.sendMessage(response, threadID, messageID);
   }
 };
 
