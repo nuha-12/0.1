@@ -2,8 +2,8 @@ const axios = require('axios');
 
 module.exports = {
   config: {
-    name: 'rasinai',
-    aliases: ['rasinai'],
+    name: 'ai',
+    aliases: ['ai , Ai'],
     prefix: false,
     author: 'Rasin',
     countDown: 2,
