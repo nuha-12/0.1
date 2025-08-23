@@ -2,7 +2,7 @@ module.exports = {
   config: {
     name: "setbalance",
     version: "1.0",
-    author: "Hasib + ChatGPT",
+    author: "Hasib",
     shortDescription: "Admin-only balance setter",
     longDescription: "Only specific admins can set user balance (money)",
     category: "Admin",
