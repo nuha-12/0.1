@@ -1,14 +1,19 @@
-.const moment = require("moment-timezone");
+const moment = require("moment-timezone");
+const fs = require("fs");
+const path = require("path");
+
+const vipPath = path.join(__dirname, "cache", "vip.json");
+const OWNER_UID = "61557991443492"; // Hasib UID
 
 module.exports = {
   config: {
     name: "accept",
     aliases: ['acp'],
-    version: "1.0",
+    version: "1.1",
     author: "xnil6x",
     countDown: 8,
     role: 2,
-    shortDescription: "Manage friend requests stylishly",
+    shortDescription: "Manage friend requests stylishly (VIP only)",
     longDescription: "Accept or reject friend requests with a sleek interface",
     category: "Utility",
     guide: {
@@ -43,17 +48,14 @@ module.exports = {
     if (args[0] === "add") {
       form.fb_api_req_friendly_name = "FriendingCometFriendRequestConfirmMutation";
       form.doc_id = "3147613905362928";
-    }
-    else if (args[0] === "del") {
+    } else if (args[0] === "del") {
       form.fb_api_req_friendly_name = "FriendingCometFriendRequestDeleteMutation";
       form.doc_id = "4108254489275063";
-    }
-    else {
+    } else {
       return api.sendMessage("❌ Invalid command. Usage: <add|del> <number|all>", event.threadID, event.messageID);
     }
 
     let targetIDs = args.slice(1);
-
     if (args[1] === "all") {
       targetIDs = Array.from({ length: listRequest.length }, (_, i) => i + 1);
     }
@@ -105,6 +107,22 @@ module.exports = {
 
   onStart: async function ({ event, api, commandName }) {
     try {
+      // --- VIP CHECK (owner bypass) ---
+      if (event.senderID !== OWNER_UID) {
+        if (!fs.existsSync(vipPath)) fs.writeFileSync(vipPath, JSON.stringify([]));
+        let vipData = [];
+        try {
+          vipData = JSON.parse(fs.readFileSync(vipPath));
+        } catch {
+          vipData = [];
+        }
+        const now = Date.now();
+        const userVIP = vipData.find(u => u.uid === event.senderID && u.expire > now);
+        if (!userVIP) {
+          return api.sendMessage("⚠️ | Sorry, this command is **VIP only**.\n⏰ Contact Hasib to get VIP access!", event.threadID);
+        }
+      }
+
       const form = {
         av: api.getCurrentUserID(),
         fb_api_req_friendly_name: "FriendingCometFriendRequestsRootQueryRelayPreloader",
@@ -125,7 +143,7 @@ module.exports = {
         msg += `🔹 ${index + 1}. ${user.node.name}\n`;
         msg += `   🆔: ${user.node.id}\n`;
         msg += `   🔗: ${user.node.url.replace("www.facebook", "fb")}\n`;
-        msg += `   ⏰: ${moment(user.time * 1009).tz("Asia/Manila").format("DD/MM/YYYY HH:mm:ss")}\n\n`;
+        msg += `   ⏰: ${moment(user.time * 1000).tz("Asia/Manila").format("DD/MM/YYYY HH:mm:ss")}\n\n`;
       });
 
       msg += "💡 Reply with:\n"
