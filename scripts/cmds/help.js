@@ -4,7 +4,7 @@ module.exports = {
     name: "help",
     aliases: ["menu"],
     version: "1.0",
-    author: "Hasib",
+    author: "Rasin",
     usePrefix: false,
     countDown: 5,
     role: 0,
@@ -27,7 +27,7 @@ module.exports = {
 
     if (args.length === 0) {
       const categories = {};
-      let responseMessage = "𖣘︎➻❥𝐂𝐨𝐦𝐦𝐚𝐧𝐝 𝐋𝐢𝐬𝐭࿐𖣘︎\n\n";
+      let responseMessage = "✨ 𝐂𝐨𝐦𝐦𝐚𝐧𝐝 𝐋𝐢𝐬𝐭 ✨\n\n";
 
       for (const [name, cmd] of commands) {
         if (!categories[cmd.config.category]) {
@@ -39,11 +39,11 @@ module.exports = {
       for (const [category, cmds] of Object.entries(categories)) {
         responseMessage += `\n╭────────⭓\n`;
         responseMessage += `\│『 ${category.toUpperCase()} 』\n`;
-        responseMessage += cmds.map((cmd) => ✧ `│  ${cmd}`).join("\n") + "\n";
+        responseMessage += cmds.map((cmd) => ✧`│  ${cmd}`).join("\n") + "\n";
         responseMessage += `╰────────⭓`;
       }
 
-      responseMessage += `\n╭───────────────➣\n│ 𝐂𝐮𝐫𝐫𝐞𝐧𝐭𝐥𝐲, 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐡𝐚𝐬 [${totalCommands}]\n│ 𝐜𝐨𝐦𝐦𝐚𝐧𝐝𝐬.\n│ 𝐔𝐬𝐞 'help (cmd)' 𝐭𝐨 𝐠𝐞𝐭 𝐦𝐨𝐫𝐞\n│ 𝐝𝐞𝐭𝐚𝐢𝐥𝐬.\n│ 𝐂𝐫𝐞𝐚𝐭𝐨𝐫:Karim benzima  \n╰───────────────➣`;
+      responseMessage += `\n╭───────────────➣\n│ 𝐂𝐮𝐫𝐫𝐞𝐧𝐭𝐥𝐲, 𝐭𝐡𝐞 𝐛𝐨𝐭 𝐡𝐚𝐬 [${totalCommands}]\n│ 𝐜𝐨𝐦𝐦𝐚𝐧𝐝𝐬.\n│ 𝐔𝐬𝐞 'help (cmd)' 𝐭𝐨 𝐠𝐞𝐭 𝐦𝐨𝐫𝐞\n│ 𝐝𝐞𝐭𝐚𝐢𝐥𝐬.\n│ 𝐂𝐫𝐞𝐚𝐭𝐨𝐫: Karim benzima \n╰───────────────➣`;
 
       return api.sendMessage(responseMessage, threadID, messageID);
     }
