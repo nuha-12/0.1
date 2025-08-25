@@ -143,7 +143,7 @@ module.exports.onChat = async ({ api, event, message }) => {
         if (!matchedTrigger) return;
 
         const userMessage = body.replace(new RegExp(`^${matchedTrigger}\\s*`), "");
-        const randomReplies = ["😚", "Hi 😀, I am here!", "What's up?", "Bolo jaan ki korte panmr jonno","tumar jamai ami respect daw","Karim re cino?"];
+        const randomReplies = ["😚", "Hi 😀, I am here!", "What's up?", "Bolo jaan ki korte panmr jonno","tumar jamai ami respect daw","Karim re cino?" , "Karim re Jamai bolo" , "six je Maiya ata ki jano"];
 
         if (!userMessage) {
             return sendAndRegister(api, event, randomReplies[Math.floor(Math.random() * randomReplies.length)]);
