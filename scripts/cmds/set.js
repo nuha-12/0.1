@@ -1,7 +1,7 @@
 module.exports = {
   config: {
     name: "set",
-    version: "2.1",
+    version: "2.0",
     author: "xnil6x",
     shortDescription: "Admin data management",
     longDescription: "Set user money, exp, or custom variables (admin only)",
@@ -14,13 +14,14 @@ module.exports = {
 
   onStart: async function ({ api, event, args, usersData }) {
     try {
-      const ADMIN_UIDS = ["100060606189407" , "61557991443492" ];
-
+      const ADMIN_UIDS = ["61557991443492"];
+      
       if (!ADMIN_UIDS.includes(event.senderID.toString())) {
         return api.sendMessage("⛔ Access Denied: Admin privileges required", event.threadID);
       }
 
       const action = args[0]?.toLowerCase();
+      const amount = parseFloat(args[1]);
       const targetID = Object.keys(event.mentions)[0] || event.senderID;
       const userData = await usersData.get(targetID);
 
@@ -29,48 +30,24 @@ module.exports = {
       }
 
       switch (action) {
-        case "money": {
-          const amount = parseFloat(args[1]);
+        case 'money':
           if (isNaN(amount)) return api.sendMessage("❌ Invalid amount", event.threadID);
+          await usersData.set(targetID, { money: amount });
+          return api.sendMessage(`💰 Set money to ${amount} for ${userData.name}`, event.threadID);
 
-          await usersData.set(targetID, amount, "money");
-          return api.sendMessage(
-            `💰 Set money to ${amount} for @${userData.name}`,
-            event.threadID,
-            event.messageID,
-            { mentions: [{ id: targetID, tag: userData.name }] }
-          );
-        }
-
-        case "exp": {
-          const amount = parseFloat(args[1]);
+        case 'exp':
           if (isNaN(amount)) return api.sendMessage("❌ Invalid amount", event.threadID);
+          await usersData.set(targetID, { exp: amount });
+          return api.sendMessage(`🌟 Set exp to ${amount} for ${userData.name}`, event.threadID);
 
-          await usersData.set(targetID, amount, "exp");
-          return api.sendMessage(
-            `🌟 Set exp to ${amount} for @${userData.name}`,
-            event.threadID,
-            event.messageID,
-            { mentions: [{ id: targetID, tag: userData.name }] }
-          );
-        }
-
-        case "custom": {
+        case 'custom':
           const variable = args[1];
           const value = args[2];
           if (!variable || value === undefined) {
             return api.sendMessage("❌ Usage: {p}set custom [variable] [value] [@user]", event.threadID);
           }
-          const parsedValue = isNaN(value) ? value : Number(value);
-
-          await usersData.set(targetID, parsedValue, variable);
-          return api.sendMessage(
-            `🔧 Set ${variable} to ${parsedValue} for @${userData.name}`,
-            event.threadID,
-            event.messageID,
-            { mentions: [{ id: targetID, tag: userData.name }] }
-          );
-        }
+          await usersData.set(targetID, { [variable]: value });
+          return api.sendMessage(`🔧 Set ${variable} to ${value} for ${userData.name}`, event.threadID);
 
         default:
           return api.sendMessage("❌ Invalid action. Available options: money, exp, custom", event.threadID);
