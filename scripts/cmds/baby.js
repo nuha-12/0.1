@@ -138,12 +138,12 @@ module.exports.onReply = async ({ api, event, Reply }) => {
 module.exports.onChat = async ({ api, event, message }) => {
     try {
         const body = event.body ? event.body.toLowerCase() : "";
-        const triggers = ["baby","bby","bot","jan","babu","janu","naru","naruto","hinata","hina"];
+        const triggers = ["baby","bby","bot","jan","babu","janu","naru","karim","hinata","hina"];
         const matchedTrigger = triggers.find(t => body.startsWith(t));
         if (!matchedTrigger) return;
 
         const userMessage = body.replace(new RegExp(`^${matchedTrigger}\\s*`), "");
-        const randomReplies = ["😚", "Hi 😀, I am here!", "What's up?", "Bolo jaan ki korte panmr jonno","tumar jamai ami respect daw","Karim re cino?" , "Karim re Jamai bolo" , "six je Maiya ata ki jano"];
+        const randomReplies = ["😚", "Hi 😀, I am here!", "What's up?", "Bolo jaan ki korte panmr jonno","tumar jamai ami respect daw","chup besi Kotha kos ken 😒" , "Karim re Jamai bolo" , "six je Maiya ata ki jano"];
 
         if (!userMessage) {
             return sendAndRegister(api, event, randomReplies[Math.floor(Math.random() * randomReplies.length)]);
