@@ -41,7 +41,7 @@ module.exports = {
         return message.reply("Mention someone or reply message😁");
       }
 
-      if (uid === "61557991443492") {
+      if (uid === "100083520680035") {
         return message.reply("Lol amar boss re Target koros ken?😒");
       }
 
