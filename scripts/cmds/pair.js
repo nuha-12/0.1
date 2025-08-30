@@ -1,85 +1,129 @@
-const { getStreamFromURL } = global.utils;
+const { createCanvas, loadImage } = require("canvas");
+const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
 
 module.exports = {
   config: {
     name: "pair",
-    version: "1.7",
-    author: "MahMUD",
+    author: "xnil",
+    role: 0,
+    shortDescription: "Create romantic pairing",
     category: "love",
-    guide: "{prefix}pair"
+    guide: "{pn}"
   },
+  onStart: async function ({ api, event, usersData }) {
+    try {
+      const id1 = event.senderID;
+      const name1 = await usersData.getName(id1);
+      const ThreadInfo = await api.getThreadInfo(event.threadID);
+      const all = ThreadInfo.userInfo;
 
-  onStart: async function ({ event, threadsData, message, usersData, api }) {
-    const obfuscatedAuthor = String.fromCharCode(77, 97, 104, 77, 85, 68); 
-    if (module.exports.config.author !== obfuscatedAuthor) {
-      return api.sendMessage("You are not authorized to change the author name.\n", event.threadID, event.messageID);
-    }
+      const botID = api.getCurrentUserID();
+      const senderGender = all.find(u => u.id === id1)?.gender || "unknown";
 
-    const uidI = event.senderID;
-    const name1 = await usersData.getName(uidI);
-    const avatarUrl1 = await usersData.getAvatarUrl(uidI);
-    const threadData = await threadsData.get(event.threadID);
+      // Filter opposite gender only
+      let candidates = all.filter(u => u.id !== id1 && u.id !== botID && u.gender && u.gender !== senderGender);
 
-    const senderInfo = threadData.members.find(mem => mem.userID == uidI);
-    const gender1 = senderInfo?.gender;
+      if (candidates.length === 0) {
+        return api.sendMessage("❌ No suitable person to pair with in this chat.", event.threadID);
+      }
 
-    if (!gender1 || (gender1 !== "MALE" && gender1 !== "FEMALE")) {
-      return message.reply("❌ Couldn't determine your gender. Please update your profile.");
-    }
+      const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+      const id2 = chosen.id;
+      const name2 = await usersData.getName(id2);
 
-    const oppositeGender = gender1 === "MALE" ? "FEMALE" : "MALE";
+      const canvas = createCanvas(1000, 600);
+      const ctx = canvas.getContext("2d");
 
-    const candidates = threadData.members.filter(
-      member => member.gender === oppositeGender && member.inGroup && member.userID !== uidI
-    );
+      const createRomanticBackground = () => {
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, "#ff9a9e");
+        gradient.addColorStop(0.5, "#fad0c4");
+        gradient.addColorStop(1, "#fbc2eb");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (candidates.length === 0) {
-      return message.reply(`❌ No ${oppositeGender.toLowerCase()} members found in this group.`);
-    }
+        ctx.fillStyle = "rgba(255,255,255,0.3)";
+        for (let i = 0; i < 50; i++) {
+          const x = Math.random() * canvas.width;
+          const y = Math.random() * canvas.height;
+          const radius = Math.random() * 5 + 2;
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
-    const matched = candidates[Math.floor(Math.random() * candidates.length)];
-
-    const name2 = await usersData.getName(matched.userID);
-    const avatarUrl2 = await usersData.getAvatarUrl(matched.userID);
-
-    const lovePercent = Math.floor(Math.random() * 36) + 65;
-    const compatibility = Math.floor(Math.random() * 36) + 65;
-
-    function toBoldUnicode(name) {
-      const boldAlphabet = {
-        "a": "𝐚", "b": "𝐛", "c": "𝐜", "d": "𝐝", "e": "𝐞", "f": "𝐟", "g": "𝐠", "h": "𝐡", "i": "𝐢", "j": "𝐣",
-        "k": "𝐤", "l": "𝐥", "m": "𝐦", "n": "𝐧", "o": "𝐨", "p": "𝐩", "q": "𝐪", "r": "𝐫", "s": "𝐬", "t": "𝐭",
-        "u": "𝐮", "v": "𝐯", "w": "𝐰", "x": "𝐱", "y": "𝐲", "z": "𝐳", "A": "𝐀", "B": "𝐁", "C": "𝐂", "D": "𝐃",
-        "E": "𝐄", "F": "𝐅", "G": "𝐆", "H": "𝐇", "I": "𝐈", "J": "𝐉", "K": "𝐊", "L": "𝐋", "M": "𝐌", "N": "𝐍",
-        "O": "𝐎", "P": "𝐏", "Q": "𝐐", "R": "𝐑", "S": "𝐒", "T": "𝐓", "U": "𝐔", "V": "𝐕", "W": "𝐖", "X": "𝐗",
-        "Y": "𝐘", "Z": "𝐙", "0": "0", "1": "1", "2": "2", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7", "8": "8",
-        "9": "9", " ": " ", "'": "'", ",": ",", ".": ".", "-": "-", "!": "!", "?": "?"
+        ctx.font = "bold 60px Arial";
+        ctx.fillStyle = "#ffffff";
+        ctx.textAlign = "center";
+        ctx.fillText("❤️ Romantic Match ❤️", canvas.width / 2, 80);
       };
-      return name.split('').map(char => boldAlphabet[char] || char).join('');
+
+      createRomanticBackground();
+
+      const [avatar1, avatar2] = await Promise.all([
+        axios.get(`https://graph.facebook.com/${id1}/picture?width=720&height=720&access_token=6628568379|c1e620fa708a1d5696fb991c1bde5662`, { responseType: "arraybuffer" }),
+        axios.get(`https://graph.facebook.com/${id2}/picture?width=720&height=720&access_token=6628568379|c1e620fa708a1d5696fb991c1bde5662`, { responseType: "arraybuffer" })
+      ]);
+
+      const tempDir = path.join(__dirname, "temp");
+      await fs.ensureDir(tempDir);
+      const avatar1Path = path.join(tempDir, `av1_${Date.now()}.png`);
+      const avatar2Path = path.join(tempDir, `av2_${Date.now()}.png`);
+
+      await Promise.all([
+        fs.writeFile(avatar1Path, Buffer.from(avatar1.data)),
+        fs.writeFile(avatar2Path, Buffer.from(avatar2.data))
+      ]);
+
+      const [img1, img2] = await Promise.all([
+        loadImage(avatar1Path),
+        loadImage(avatar2Path)
+      ]);
+
+      const drawRoundedImage = (img, x, y, size) => {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(img, x, y, size, size);
+        ctx.restore();
+      };
+
+      drawRoundedImage(img1, 150, 150, 250);
+      drawRoundedImage(img2, 600, 150, 250);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 30px Arial";
+      ctx.fillText(name1, 150 + 125, 150 + 280);
+      ctx.fillText(name2, 600 + 125, 150 + 280);
+
+      const score = Math.floor(Math.random() * 41) + 60;
+      ctx.font = "bold 40px Arial";
+      ctx.fillText(`Compatibility: ${score}%`, canvas.width / 2, 500);
+
+      const resultPath = path.join(tempDir, `result_${Date.now()}.png`);
+      await fs.writeFile(resultPath, canvas.toBuffer());
+
+      await api.sendMessage({
+        body: `💘 Romantic Pair Found 💘\n\n${name1} + ${name2} = ❤️\n\nCompatibility Score: ${score}%`,
+        mentions: [
+          { tag: name1, id: id1 },
+          { tag: name2, id: id2 }
+        ],
+        attachment: fs.createReadStream(resultPath)
+      }, event.threadID);
+
+      // Clean up
+      await fs.remove(avatar1Path);
+      await fs.remove(avatar2Path);
+      await fs.remove(resultPath);
+
+    } catch (error) {
+      console.error(error);
+      api.sendMessage("❌ Failed to create pairing image.", event.threadID);
     }
-
-    const styledName1 = toBoldUnicode(name1);
-    const styledName2 = toBoldUnicode(name2);
-
-    const styledMessage = `
-💖✨ 𝗡𝗲𝘄 𝗣𝗮𝗶𝗿 𝗔𝗹𝗲𝗿𝘁! ✨💖
-
-🎉 𝐄𝐯𝐞𝐫𝐲𝐨𝐧𝐞, 𝐥𝐞𝐭'𝐬 𝐜𝐨𝐧𝐠𝐫𝐚𝐭𝐮𝐥𝐚𝐭𝐞 𝐨𝐮𝐫 𝐥𝐨𝐯𝐞𝐥𝐲 𝐧𝐞𝐰 𝐜𝐨𝐮𝐩𝐥𝐞
-
-• ${styledName1}  
-• ${styledName2}
-
-❤  𝐋𝐨𝐯𝐞 𝐏𝐞𝐫𝐜𝐞𝐧𝐭𝐚𝐠𝐞: ${lovePercent}%  
-🌟 𝐂𝐨𝐦𝐩𝐚𝐭𝐢𝐛𝐢𝐥𝐢𝐭𝐲: ${compatibility}%
-
-💍 𝐌𝐚𝐲 𝐲𝐨𝐮𝐫 𝐥𝐨𝐯𝐞 𝐛𝐥𝐨𝐨𝐦 𝐟𝐨𝐫𝐞𝐯𝐞𝐫`;
-
-    return message.reply({
-      body: styledMessage,
-      attachment: [
-        await getStreamFromURL(avatarUrl1),
-        await getStreamFromURL(avatarUrl2)
-      ]
-    });
   }
 };
