@@ -6,7 +6,7 @@ const OWNER_UID = "61557991443492"; // Owner's UID
 
 module.exports = {
     config: {
-        name: "gay2",
+        name: "gay",
         version: "1.1",
         author: "@tas33n",
         countDown: 1,
