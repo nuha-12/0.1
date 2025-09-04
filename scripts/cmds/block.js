@@ -3,7 +3,7 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "block",
-    author: "anne/zed",
+    author: "Hasib",
     role: 3, // Owner-only
     shortDescription: "Block or unblock a user (Owner only)",
     longDescription: "",
