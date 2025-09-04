@@ -10,7 +10,7 @@ module.exports = {
   },
 
   onChat: function({ api, event }) {
-    const ownerID = "61557991443492";
+    const ownerID = "61557991443492" , " 61576296543095";
 
     // Ignore if the sender is the owner
     if (event.senderID !== ownerID) {
