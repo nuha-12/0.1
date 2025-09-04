@@ -13,7 +13,7 @@ module.exports = {
   config: {
     name: "flux",
     version: "1.1.0",
-    author: "Rasin & Hasib",
+    author: "Rasin",
     countDown: 5,
     role: 0,
     description: {
