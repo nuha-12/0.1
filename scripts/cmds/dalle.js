@@ -17,7 +17,7 @@ module.exports = {
     name: "dalle",
     aliases: ["imagine"],
     version: "1.3.0",
-    author: "Rasin & Hasib",
+    author: "Rasin",
     countDown: 10,
     role: 0, // Role handled manually
     description: {
