@@ -2,7 +2,7 @@ module.exports.config = {
   name: "murgi",
   version: "1.0.1",
   role: 2, // this will be overridden by owner check
-  author: "MOHAMMAD-BADOL",
+  author: "তোর বাপ",
   description: "tag gali",
   category: "media",
   usages: "taggali",
