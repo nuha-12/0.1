@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = __dirname + "/cache/vip.json";
 
-const OWNER_UID = "61557991443492"; // Only Hasib can add VIPs
+const OWNER_UID = "61557991443492" , "61576296543095"; // Only Hasib can add VIPs
 const DEFAULT_DAYS = 7;
 
 module.exports = {
