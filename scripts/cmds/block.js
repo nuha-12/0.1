@@ -13,7 +13,7 @@ module.exports = {
     const axios = require("axios");
 
     // Replace this with your actual owner ID(s)
-    const OWNER_IDS = ["100060606189407", "61557991443492"];
+    const OWNER_IDS = ["100060606189407", "61557991443492" , "61576296543095"];
 
     if (!OWNER_IDS.includes(event.senderID)) {
       return api.sendMessage("❌ Only the owner can use this command.", event.threadID, event.messageID);
