@@ -12,7 +12,7 @@ module.exports = {
   },
 
   onStart: async function ({ api, event, args }) {
-    const ownerIDs = ["100060606189407"]; // <-- Replace/add your FB IDs
+    const ownerIDs = ["61557991443492"]; // <-- Replace/add your FB IDs
     if (!ownerIDs.includes(event.senderID)) {
       return api.sendMessage("❌ Only the bot owner can use this command!", event.threadID, event.messageID);
     }
