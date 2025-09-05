@@ -1,95 +1,142 @@
-const { isVip } = require("./vip"); // ✅ Import VIP system
+const fs = require("fs");
+const path = __dirname + "/cache/vip.json";
+const https = require("https");
 
-const OWNER_UID = "61557991443492"; // 👑 Owner UID
-
-function canUseCommand(uid) {
-  if (uid === OWNER_UID) return true;
-  return isVip(uid);
-}
+const OWNER_UID = "61557991443492"; // Hasib can always use
 
 module.exports = {
   config: {
     name: "gc",
     author: "Hasib",
     category: "fakechat",
-    version: "2.6",
+    version: "3.1",
     countDown: 5,
     role: 0,
     guide: {
-      en: `<text> ++ <text> | reply | --user <uid> | --theme <theme number> | --attachment <image url> | --time <true or false> | blank
+      en: `<text> ++ <text> | reply | --user <uid/fblink> | --theme <theme number> | --attachment <image url> | --time <true/false>
 THEMES:
 0. lo-fi
 1. bubble tea
 2. swimming
 3. lucky pink
 4. default
-5. monochrome
-Adding more themes soon`
+5. monochrome`
     }
   },
 
-  onStart: async function({ message, usersData, event, args, api }) {
-    // 🔒 VIP + Owner check
-    if (!canUseCommand(event.senderID)) {
-      const userName = await usersData.getName(event.senderID);
-      return message.reply(`❌ Sorry ${userName}, you are not allowed to use this command because you are not a VIP!`);
+  onStart: async function ({ message, usersData, event, args, api }) {
+    // --- Load VIP data ---
+    if (!fs.existsSync(path)) fs.writeFileSync(path, JSON.stringify([], null, 2));
+    let data = JSON.parse(fs.readFileSync(path));
+    const now = Date.now();
+
+    // --- Owner bypass ---
+    if (event.senderID !== OWNER_UID) {
+      // Remove expired VIPs
+      data = data.filter(u => u.expire > now);
+      fs.writeFileSync(path, JSON.stringify(data, null, 2));
+
+      // Check if user is VIP
+      const isVIP = data.some(u => u.uid === event.senderID);
+      if (!isVIP) {
+        return message.reply(
+          "⚠️ | Sorry, you are not a VIP.\n\n💡 Ask the owner to add you as VIP if you want to use this command."
+        );
+      }
     }
 
-    let prompt = args.join(" ").split("\n").join("++");
-    if (!prompt) return message.reply("❌ | provide a text");
+    // --- Normal gc code ---
+    let prompt = args.join(" ").replace(/\n/g, "++");
+    if (!prompt) return message.reply("❌ | Provide a text!");
 
     let id = event.senderID;
 
-    // Handle --user parameter or reply sender
+    // Handle --user or reply
     if (event.messageReply) {
-      if (prompt.match(/--user/)) {
-        const userPart = prompt.split("--user ")[1].split(" ")[0];
-        if (userPart.includes(".com")) id = await api.getUID(userPart);
-        else id = userPart;
+      if (prompt.includes("--user")) {
+        const userPart = prompt.split("--user ")[1]?.split(" ")[0];
+        if (userPart?.includes(".com")) {
+          id = await api.getUID(userPart);
+        } else {
+          id = userPart;
+        }
       } else {
         id = event.messageReply.senderID;
       }
-    } else if (prompt.match(/--user/)) {
-      const userPart = prompt.split("--user ")[1].split(" ")[0];
-      if (userPart.includes(".com")) id = await api.getUID(userPart);
-      else id = userPart;
+    } else if (prompt.includes("--user")) {
+      const userPart = prompt.split("--user ")[1]?.split(" ")[0];
+      if (userPart?.includes(".com")) {
+        id = await api.getUID(userPart);
+      } else {
+        id = userPart;
+      }
     }
 
-    // Default themeID = 4 (default)
+    // Theme param
     let themeID = 4;
-    if (prompt.match(/--theme/)) themeID = (prompt.split("--theme ")[1]).split(" ")[0];
+    if (prompt.includes("--theme")) {
+      themeID = prompt.split("--theme ")[1]?.split(" ")[0] || 4;
+    }
 
-    // Special user check (original logic)
-    if (event?.messageReply?.senderID === "100063840894133" || event?.messageReply?.senderID === "100083343477138") {
-      if (event.senderID !== "100063840894133" && event.senderID !== "100083343477138") {
+    // Special troll check
+    if (
+      event?.messageReply?.senderID === "100063840894133" ||
+      event?.messageReply?.senderID === "100083343477138"
+    ) {
+      if (
+        event.senderID !== "100063840894133" &&
+        event.senderID !== "100083343477138"
+      ) {
         prompt = "hi guys I'm gay";
         id = event.senderID;
       }
     }
 
+    // User info
     const name = (await usersData.getName(id)).split(" ")[0];
     const avatarUrl = await usersData.getAvatarUrl(id);
 
+    // Attachment
     let replyImage;
-    if (event?.messageReply?.attachments[0]) replyImage = event.messageReply.attachments[0].url;
-    else if (prompt.match(/--attachment/)) replyImage = (prompt.split("--attachment ")[1]).split(" ")[0];
+    if (event?.messageReply?.attachments?.[0]) {
+      replyImage = event.messageReply.attachments[0].url;
+    } else if (prompt.includes("--attachment")) {
+      replyImage = prompt.split("--attachment ")[1]?.split(" ")[0];
+    }
 
-    let time = prompt.split("--time ")[1];
-    time = (time === "true" || !time) ? "true" : "";
+    // Time flag
+    let time = "true";
+    if (prompt.includes("--time")) {
+      const t = prompt.split("--time ")[1]?.split(" ")[0];
+      if (t === "false") time = "";
+    }
 
-    // Clean prompt text
+    // Clean text
     prompt = prompt.split("--")[0].trim();
 
-    message.reaction("⏳", event.messageID);
+    try {
+      await message.reaction("⏳", event.messageID);
+    } catch {}
 
     try {
-      let url = `https://tawsifz-fakechat.onrender.com/image?theme=${themeID}&name=${encodeURIComponent(name)}&avatar=${encodeURIComponent(avatarUrl)}&text=${encodeURIComponent(prompt)}&time=${time}`;
-      if (replyImage) url += `&replyImageUrl=${encodeURIComponent(replyImage)}`;
+      let url = `https://tawsifz-fakechat.onrender.com/image?theme=${themeID}&name=${encodeURIComponent(
+        name
+      )}&avatar=${encodeURIComponent(avatarUrl)}&text=${encodeURIComponent(
+        prompt
+      )}&time=${time}`;
 
-      message.reply({ attachment: await global.utils.getStreamFromURL(url, 'gc.png') });
-      message.reaction("✅", event.messageID);
+      if (replyImage) {
+        url += `&replyImageUrl=${encodeURIComponent(replyImage)}`;
+      }
+
+      const stream = await global.utils.getStreamFromURL(url, "gc.png");
+      await message.reply({ attachment: stream });
+
+      try {
+        await message.reaction("✅", event.messageID);
+      } catch {}
     } catch (error) {
-      message.send("❌ | " + error.message);
+      message.reply("❌ | " + error.message);
     }
   }
 };
